@@ -1,0 +1,32 @@
+#!/usr/bin/env ruby
+
+require 'binary_string'
+
+if ARGV.empty?
+  puts <<EOF
+usage: #{File.basename $0, '.rb'} <file>[@<start>[-<end>]] [...]
+EOF
+  exit 1
+end
+
+ARGV.each do |fn|
+  offset = 0
+  if !File.exist?(fn) && (m = fn.match(/^(.+)@(.+)$/))
+    fn = m[1]
+    if om = m[2].match(/^(\d+)-(\d+)$/)
+      offset = om[1].to_i
+      max    = om[2].to_i - offset
+    else
+      offset = m[1].to_i
+    end
+  end
+  begin
+    File.open(fn) do |file|
+      max ||= file.size
+      file.seek(offset)
+      file.read(max).extend(BinaryString).hexdump(max, $stdout, offset)
+    end
+  rescue Exception => ex
+    $stderr.puts "#{ex.message} (#{ex.class})"
+  end
+end
